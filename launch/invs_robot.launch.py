@@ -49,34 +49,24 @@ def generate_launch_description():
     )
 
     # --------- Robot Base ---------
-    robot_base_bringup = GroupAction([
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource([
-                PathJoinSubstitution([
-                    FindPackageShare("ranger_bringup"),
-                    "launch",
-                    "ranger_mini_v3.launch.py",
-                ])
-            ]),
-            launch_arguments={
-                "port_name": "can0",
-                "robot_model": robot_model,
-                "odom_frame": "odom",
-                "base_frame": "base_link",
-                "update_rate": "50",
-                "odom_topic_name": "odom",
-                "publish_odom_tf": "true",
-            }.items(),
-        ),
-        Node(
-            package="tf2_ros",
-            executable="static_transform_publisher",
-            name="base_footprint_transform_publisher",
-            arguments=['--x', '0.0', '--y', '-0.0', '--z', '0.0',
-                       '--yaw', '0', '--pitch', '0', '--roll', '0',
-                       '--frame-id', 'base_link', '--child-frame-id', 'base_footprint']
-        )
-    ])
+    robot_base_bringup = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            PathJoinSubstitution([
+                FindPackageShare("ranger_bringup"),
+                "launch",
+                "ranger_mini_v3.launch.py",
+            ])
+        ]),
+        launch_arguments={
+            "port_name": "can0",
+            "robot_model": "ranger_mini_v3",
+            "odom_frame": "odom",
+            "base_frame": "base_link",
+            "update_rate": "50",
+            "odom_topic_name": "odom",
+            "publish_odom_tf": "true",
+        }.items(),
+    )
 
     # --------- Chassis ---------
     chassis_bringup = GroupAction([
@@ -91,25 +81,6 @@ def generate_launch_description():
         )
     ])
 
-
-
-    laser_transform_publisher = Node(
-        package="tf2_ros",
-        executable="static_transform_publisher",
-        name="hesai_lidar_transform_publisher",
-        arguments=['--x', '0.0', '--y', '-0.0', '--z', '0.3',
-                   '--yaw', '0', '--pitch', '0', '--roll', '0',
-                   '--frame-id', 'base_link', '--child-frame-id', 'base_laser'])
-    
-    laser_to_hesai_tf = Node(
-        package="tf2_ros",
-        executable="static_transform_publisher",
-        name="laser_to_hesai_tf",
-        arguments=['--x', '0.0', '--y', '-0.0', '--z', '0.0',
-                   '--yaw', '1.5714', '--pitch', '0', '--roll', '0',
-                   '--frame-id', 'base_laser', '--child-frame-id', 'hesai_lidar']
-    )
-
     cloud_to_laser_node = Node(
             package="pointcloud_to_laserscan",
             executable="pointcloud_to_laserscan_node",
@@ -118,10 +89,10 @@ def generate_launch_description():
             parameters=[{
                 'target_frame': 'base_laser',
                 "range_min": 0.1,
-                "range_max": 30.0,
+                "range_max": 15.0,
                 "scan_time": 0.1,
                 "min_height": -0.4,
-                "max_height": 0.5,
+                "max_height": 0.4,
                 "angle_min": -3.14159265,
                 "angle_max": 3.14159265,
                 "angle_increment": 0.00872664625,
@@ -142,6 +113,4 @@ def generate_launch_description():
         robot_base_bringup,
         chassis_bringup,
         cloud_to_laser_node,
-        laser_transform_publisher,
-        laser_to_hesai_tf
     ])

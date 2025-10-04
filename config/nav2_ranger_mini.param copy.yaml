@@ -14,12 +14,12 @@ amcl:
     global_frame_id: "map"
     lambda_short: 0.1
     laser_likelihood_max_dist: 2.0
-    laser_max_range: 15.0
-    laser_min_range: 0.2
+    laser_max_range: 100.0
+    laser_min_range: -1.0
     laser_model_type: "likelihood_field"
     max_beams: 60
-    max_particles: 3000
-    min_particles: 200
+    max_particles: 2000
+    min_particles: 500
     odom_frame_id: "odom"
     pf_err: 0.05
     pf_z: 0.99
@@ -30,14 +30,14 @@ amcl:
     save_pose_rate: 0.5
     sigma_hit: 0.2
     tf_broadcast: true
-    transform_tolerance: 0.5
-    update_min_a: 0.15
+    transform_tolerance: 1.0
+    update_min_a: 0.2
     update_min_d: 0.25
     z_hit: 0.5
     z_max: 0.05
     z_rand: 0.5
     z_short: 0.05
-    scan_topic: /scan
+    scan_topic: scan
     first_map_only: False
 
 bt_navigator:
@@ -112,7 +112,7 @@ bt_navigator_navigate_to_pose_rclcpp_node:
 controller_server:
   ros__parameters:
     use_sim_time: True
-    controller_frequency: 20.0
+    controller_frequency: 30.0
     min_x_velocity_threshold: 0.001
     min_y_velocity_threshold: 0.5
     min_theta_velocity_threshold: 0.001
@@ -138,11 +138,11 @@ controller_server:
       debug_trajectory_details: True
       min_vel_x: 0.0
       min_vel_y: 0.0
-      max_vel_x: 0.26
+      max_vel_x: 0.5
       max_vel_y: 0.0
       max_vel_theta: 1.0
       min_speed_xy: 0.0
-      max_speed_xy: 0.26
+      max_speed_xy: 0.5
       min_speed_theta: 0.0
       # Add high threshold velocity for turtlebot 3 issue.
       # https://github.com/ROBOTIS-GIT/turtlebot3_simulations/issues/75
@@ -179,8 +179,8 @@ controller_server:
 local_costmap:
   local_costmap:
     ros__parameters:
-      update_frequency: 8.0
-      publish_frequency: 8.0
+      update_frequency: 5.0
+      publish_frequency: 2.0
       global_frame: odom
       robot_base_frame: base_footprint
       use_sim_time: True
@@ -188,41 +188,36 @@ local_costmap:
       width: 3
       height: 3
       resolution: 0.05
-      robot_radius: 0.5
-      plugins: ["voxel_layer", "inflation_layer"]
+      # length: 720mm, weidth: 500mm, add some margin
+      footprint: "[[0.36, 0.25], [0.36, -0.25], [-0.36, -0.25], [-0.36, 0.25]]"
+      plugins: ["obstacle_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0
         inflation_radius: 0.3
-      voxel_layer:
-        plugin: "nav2_costmap_2d::VoxelLayer"
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
-        publish_voxel_map: False
-        origin_z: 0.05
-        z_resolution: 0.08
-        z_voxels: 16
-        max_obstacle_height: 1.8
-        mark_threshold: 0
-        observation_sources: pointcloud_marking pointcloud_clearing
-        pointcloud_marking:
-          topic: /lidar_points
-          max_obstacle_height: 1.8
+        observation_sources: scan_marking scan_clearing
+        scan_marking:
+          topic: /scan
+          max_obstacle_height: 2.0
           clearing: False
           marking: True
-          data_type: "PointCloud2"
+          data_type: "LaserScan"
           raytrace_max_range: 5.0
-          raytrace_min_range: 0.05
-          obstacle_max_range: 2.5
-          obstacle_min_range: 0.05
-      pointcloud_clearing:
-          topic: /lidar_points
-          max_obstacle_height: 10.0
+          raytrace_min_range: 0.0
+          obstacle_max_range: 5.5
+          obstacle_min_range: 0.0
+        scan_clearing:
+          topic: /scan
+          max_obstacle_height: 2.0
           clearing: True
           marking: False
-          data_type: "PointCloud2"
-          raytrace_max_range: 3.0
+          data_type: "LaserScan"
+          raytrace_max_range: 5.0
           raytrace_min_range: 0.0
-          obstacle_max_range: 2.5
+          obstacle_max_range: 5.5
           obstacle_min_range: 0.0
       always_send_full_costmap: True
 
@@ -234,7 +229,7 @@ global_costmap:
       global_frame: map
       robot_base_frame: base_footprint
       use_sim_time: True
-      robot_radius: 0.5
+      robot_radius: 0.22
       resolution: 0.05
       track_unknown_space: true
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
@@ -325,7 +320,7 @@ behavior_server:
       plugin: "nav2_behaviors/AssistedTeleop"
     global_frame: odom
     robot_base_frame: base_footprint
-    transform_tolerance: 0.2
+    transform_tolerance: 0.1
     use_sim_time: True
     simulate_ahead_time: 2.0
     max_rotational_vel: 1.0
